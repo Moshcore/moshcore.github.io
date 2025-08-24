@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎陈大人</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000428;
+            background: linear-gradient(to bottom, #000428, #004e92);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        /* 星星背景 */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .star {
+            position: absolute;
+            color: #fff;
+            animation: twinkle 3s infinite;
+            filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+        }
+        
+        .star svg {
+            display: block;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8) rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2) rotate(180deg);
+            }
+        }
+        
+        /* 中心内容 */
+        .center-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+        
+        /* 爱心容器 */
+        .heart-container {
+            position: relative;
+            margin: 0 auto 50px;
+            width: 200px;
+            height: 180px;
+        }
+        
+        /* 爱心 */
+        .heart {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 135px;
+            animation: heartbeat 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(255, 105, 180, 0.8))
+                    drop-shadow(0 0 60px rgba(255, 105, 180, 0.6))
+                    drop-shadow(0 0 90px rgba(255, 105, 180, 0.4));
+        }
+        
+        .heart:before,
+        .heart:after {
+            position: absolute;
+            content: "";
+            left: 75px;
+            top: 0;
+            width: 75px;
+            height: 120px;
+            background: #ff69b4;
+            background: linear-gradient(45deg, #ff69b4, #ff1493);
+            border-radius: 75px 75px 0 0;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5),
+                        inset -10px -10px 20px rgba(255, 20, 147, 0.5);
+        }
+        
+        .heart:after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+            background: linear-gradient(-45deg, #ff69b4, #ff1493);
+        }
+        
+        /* 爱心高光效果 */
+        .heart-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 105, 180, 0.3) 0%, transparent 70%);
+            filter: blur(20px);
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
+        }
+        
+        /* 文字 */
+        .welcome-text {
+            font-size: 56px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                         0 0 40px rgba(255, 105, 180, 0.8),
+                         0 0 60px rgba(255, 105, 180, 0.6),
+                         0 0 80px rgba(255, 105, 180, 0.4);
+            animation: text-glow 2s ease-in-out infinite alternate;
+            font-weight: bold;
+            letter-spacing: 4px;
+        }
+        
+        @keyframes text-glow {
+            from {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                             0 0 40px rgba(255, 105, 180, 0.8),
+                             0 0 60px rgba(255, 105, 180, 0.6),
+                             0 0 80px rgba(255, 105, 180, 0.4);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(255, 255, 255, 1),
+                             0 0 50px rgba(255, 105, 180, 1),
+                             0 0 70px rgba(255, 105, 180, 0.8),
+                             0 0 90px rgba(255, 105, 180, 0.6);
+            }
+        }
+        
+        /* 烟花容器 */
+        .fireworks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        /* 烟花粒子 */
+        .firework {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: explode 1.5s ease-out forwards;
+        }
+        
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .welcome-text {
+                font-size: 36px;
+            }
+            .heart-container {
+                width: 150px;
+                height: 135px;
+            }
+            .heart {
+                width: 100px;
+                height: 90px;
+            }
+            .heart:before,
+            .heart:after {
+                left: 50px;
+                width: 50px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星星背景 -->
+    <div class="stars" id="stars"></div>
+    
+    <!-- 中心内容 -->
+    <div class="center-content">
+        <div class="heart-container">
+            <div class="heart-glow"></div>
+            <div class="heart"></div>
+        </div>
+        <h1 class="welcome-text">欢迎陈大人使用本系统</h1>
+    </div>
+    
+    <!-- 烟花容器 -->
+    <div class="fireworks" id="fireworks"></div>
+    
+    <script>
+        // 创建五角星SVG
+        function createStarSVG(size) {
+            return `
+                <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            `;
+        }
+        
+        // 创建星星
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 100;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // 随机大小 (更大的星星)
+                const size = Math.random() * 20 + 10; // 10-30px
+                star.innerHTML = createStarSVG(size);
+                
+                // 随机位置
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                
+                // 随机动画延迟
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                
+                // 随机颜色 (白色到淡黄色)
+                const brightness = Math.random() * 0.5 + 0.5;
+                const yellowTint = Math.random() * 0.3;
+                star.style.color = `rgba(255, ${255 - yellowTint * 50}, ${200 + yellowTint * 55}, ${brightness})`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // 创建烟花
+        function createFirework(x, y) {
+            const fireworksContainer = document.getElementById('fireworks');
+            const particleCount = 40;
+            const colors = ['#ff0000', '#ff69b4', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ffa500', '#fff'];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework';
+                
+                // 随机颜色
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.backgroundColor = color;
+                particle.style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+                
+                // 设置初始位置
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                
+                // 计算爆炸方向
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const velocity = Math.random() * 250 + 150;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                
+                // 设置动画
+                particle.style.animation = 'explode 1.5s ease-out forwards';
+                particle.style.transform = `translate(${vx}px, ${vy}px)`;
+                
+                fireworksContainer.appendChild(particle);
+                
+                // 动画结束后移除粒子
+                setTimeout(() => {
+                    particle.remove();
+                }, 1500);
+            }
+        }
+        
+        // 随机位置发射烟花
+        function launchRandomFirework() {
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight * 0.7;
+            createFirework(x, y);
+        }
+        
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            createStars();
+            
+            // 每隔一段时间发射烟花
+            setInterval(launchRandomFirework, 1200);
+            
+            // 立即发射几个烟花
+            for (let i = 0; i < 3; i++) {
+                setTimeout(launchRandomFirework, i * 400);
+            }
+        });
+        
+        // 点击发射烟花
+        document.addEventListener('click', (e) => {
+            createFirework(e.clientX, e.clientY);
+        });
+        
+        // 窗口大小改变时重新创建星星
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                document.getElementById('stars').innerHTML = '';
+                createStars();
+            }, 300);
+        });
+    </script>
+</body>
+</html>

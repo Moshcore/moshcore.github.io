@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel导入示例 - SheetJS</title>
+    <script src="./assets/tailwindcss.js"></script>
+    <script src="./assets/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .file-drop-active {
+                @apply border-primary bg-blue-50;
+            }
+            .table-hover-effect {
+                @apply transition-colors duration-200 hover:bg-gray-50;
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+            .form-group {
+                @apply mb-6;
+            }
+            .input-label {
+                @apply block text-sm font-medium text-gray-700 mb-1.5;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 transition-all duration-200 input-focus;
+            }
+            .input-hint {
+                @apply text-xs text-gray-500 mt-1.5;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">用户导入工具</h1>
+        </header>
+
+        <main class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <!-- 文件上传区域 -->
+            <div id="fileUploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-all duration-300 mb-8">
+                <i class="fa fa-file-excel-o text-5xl text-primary mb-4"></i>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">拖放Excel文件到此处，或点击选择文件</h2>
+                <p class="text-secondary mb-4">支持 .xlsx, .xls, .csv 格式</p>
+                
+                <label class="inline-block bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg">
+                    <i class="fa fa-upload mr-2"></i>选择文件
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
+                </label>
+                
+                <p id="fileInfo" class="mt-4 text-sm text-gray-500 hidden"></p>
+            </div>
+            <!-- 提交按钮 -->
+            <div id="submitBtn" class="pt-2">
+                <button 
+                    type="submit" 
+                    class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center"
+                >
+                    <i class="fa fa-paper-plane mr-2"></i>提交表单
+                </button>
+            </div>
+
+            <!-- 错误提示区域 -->
+            <div id="errorArea" class="hidden bg-red-50 border border-red-200 text-danger p-4 rounded-lg mb-8">
+                <i class="fa fa-exclamation-circle mr-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </main>
+
+        <footer class="text-center text-gray-500 text-sm">
+            <p>使用 SheetJS (js-xlsx) 实现 | <a href="https://sheetjs.com/" target="_blank" class="text-primary hover:underline">SheetJS 官方文档</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const host = 'http://localhost:5000'
+        // API配置
+        const API_CONFIG = {
+            saveUrl: `${host}/api/user/import`  // 保存配置的接口
+        };
+        // 获取DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const tableHeader = document.getElementById('tableHeader');
+        const tableBody = document.getElementById('tableBody');
+        const errorArea = document.getElementById('errorArea');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let parsedData = null; // 存储解析后的数据
+
+        // 拖放功能实现
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            fileUploadArea.classList.add('file-drop-active');
+        }
+
+        function unhighlight() {
+            fileUploadArea.classList.remove('file-drop-active');
+        }
+
+        // 处理文件拖放
+        fileUploadArea.addEventListener('drop', handleDrop, false);
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                handleFiles(files[0]);
+            }
+        }
+
+        // 处理文件选择
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) {
+                handleFiles(this.files[0]);
+            }
+        });
+
+        // 点击上传区域触发文件选择
+        fileUploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        submitBtn.addEventListener('click', async function(){
+            if(!parsedData){
+                showError('请上传 .xlsx, .xls 或 .csv 格式的文件');
+                return;
+            }
+            try {
+                const response = await fetch(API_CONFIG.saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(parsedData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                showError('导入成功', 'success');
+                
+            } catch (error) {
+                console.error('导入失败:', error);
+                showError('导入失败: ' + error.message, 'error');
+            }
+        })
+
+        // 处理文件
+        function handleFiles(file) {
+            // 验证文件类型
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const validExtensions = ['xlsx', 'xls', 'csv'];
+            
+            if (!validExtensions.includes(fileExtension)) {
+                showError('请上传 .xlsx, .xls 或 .csv 格式的文件');
+                return;
+            }
+
+            // 显示文件信息
+            fileInfo.textContent = `已选择: ${file.name} (${formatFileSize(file.size)})`;
+            fileInfo.classList.remove('hidden');
+            
+            // 读取文件
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // 隐藏错误信息
+                    errorArea.classList.add('hidden');
+                    
+                    // 解析Excel文件
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // 转换为JSON
+                    parsedData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    console.log(parsedData)
+                    // 显示解析结果
+
+                    
+                } catch (error) {
+                    showError(`解析文件时出错: ${error.message}`);
+                    console.error('解析错误:', error);
+                }
+            };
+            
+            reader.onerror = function() {
+                showError('读取文件时出错，请重试');
+            };
+            
+            // 根据文件类型选择读取方式
+            if (fileExtension === 'csv') {
+                reader.readAsText(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorArea.classList.remove('hidden');
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
+    

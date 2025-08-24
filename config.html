@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: rgb(59 130 246 / var(--tw-bg-opacity, 1));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: rgb(59 130 246 / var(--tw-bg-opacity, 0.9));
+        }
+        
+        .btn-secondary {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #da190b;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>系统配置管理</h1>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+        
+        <form id="configForm" style="display: none;">
+            <div class="form-group">
+                <label for="app_token">APP TOKEN</label>
+                <input type="text" id="app_token" name="app_token" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="person_token">用户 TOKEN</label>
+                <input type="text" id="person_token" name="person_token" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="sub_domain">子域名</label>
+                <input type="email" id="sub_domain" name="sub_domain" required>
+            </div>
+            <div class="form-group">
+                <label for="proxy_url">子域名</label>
+                <input type="email" id="proxy_url" name="proxy_url" required>
+            </div>
+
+<!--             
+            <div class="form-group">
+                <label for="language">语言设置</label>
+                <select id="language" name="language">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁体中文</option>
+                    <option value="en-US">English</option>
+                    <option value="ja-JP">日本語</option>
+                </select>
+            </div> -->
+            
+            <div class="form-group">
+                <label for="cookies">网站Cookies</label>
+                <textarea id="cookies" name="cookies" rows="4"></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-primary">保存配置</button>
+                <button type="button" class="btn-secondary" onclick="resetForm()">重置</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const host = 'http://localhost:5000'
+        // API配置
+        const API_CONFIG = {
+            getUrl: `${host}/api/config`,  // 获取配置的接口
+            saveUrl: `${host}/api/config`  // 保存配置的接口
+        };
+        
+        // 显示消息
+        function showMessage(message, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = message;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示/隐藏加载状态
+        function toggleLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('configForm').style.display = show ? 'none' : 'block';
+        }
+        
+        // 从接口加载配置
+        async function loadConfig() {
+            toggleLoading(true);
+            
+            try {
+                const response = await fetch(API_CONFIG.getUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const config = await response.json();
+                
+                // 填充表单
+                document.getElementById('app_token').value = config.app_token || '';
+                document.getElementById('person_token').value = config.person_token || '';
+                document.getElementById('sub_domain').value = config.sub_domain || '';
+                document.getElementById('proxy_url').value = config.proxy_url || '';
+
+                document.getElementById('cookies').value = config.cookies || '';
+                
+                toggleLoading(false);
+                showMessage('配置加载成功', 'success');
+                
+            } catch (error) {
+                console.error('加载配置失败:', error);
+                toggleLoading(false);
+                showMessage('加载配置失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 保存配置到接口
+        async function saveConfig(formData) {
+            try {
+                const response = await fetch(API_CONFIG.saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                showMessage('配置保存成功', 'success');
+                
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                showMessage('保存配置失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 重置表单
+        function resetForm() {
+            if (confirm('确定要重置所有配置吗？')) {
+                loadConfig();
+            }
+        }
+        
+        // 表单提交处理
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                app_token: document.getElementById('app_token').value,
+                person_token: document.getElementById('person_token').value,
+                sub_domain: document.getElementById('sub_domain').value,
+                proxy_url: document.getElementById('proxy_url').value,
+                cookies: document.getElementById('cookies').value
+            };
+            
+            await saveConfig(formData);
+        });
+        
+        // 页面加载时获取配置
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+        });
+    </script>
+</body>
+</html>
