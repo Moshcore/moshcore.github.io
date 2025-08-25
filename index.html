@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>女王大人的百宝箱</title>
     <link rel="stylesheet" type="text/css" href="./assets/index.css">
 </head>
+
 <body>
     <div class="container">
         <!-- 左侧导航栏 -->
@@ -73,11 +75,10 @@
             </div>
         </main>
     </div>
-
     <script>
         // 当前活动的iframe
         let currentIframe = 'home';
-        
+
         // 页面URL映射
         const pageUrls = {
             'home': 'welcome.html',
@@ -122,15 +123,19 @@
             // 如果iframe还没有加载过，设置src
             if (!targetIframe.src || targetIframe.src === 'about:blank' || targetIframe.src != pageUrls[pageId]) {
                 targetIframe.src = url || pageUrls[pageId];
-                
+
                 // 监听加载完成事件
-                targetIframe.onload = function() {
+                targetIframe.onload = function () {
                     hideLoading();
                     targetIframe.classList.add('active');
+                    const fetchStr = fetch.toString();
+                    if(!fetchStr.includes('[native code]')){
+                        targetIframe.contentWindow.fetch = window.fetch
+                    }
                 };
-                
+
                 // 监听加载错误事件
-                targetIframe.onerror = function() {
+                targetIframe.onerror = function () {
                     hideLoading();
                     showError();
                 };
@@ -162,7 +167,7 @@
             if (iframe && iframe.src) {
                 showLoading();
                 iframe.src = iframe.src;
-                iframe.onload = function() {
+                iframe.onload = function () {
                     hideLoading();
                 };
             }
@@ -213,7 +218,7 @@
         }
 
         // 页面加载时恢复上次访问的页面
-        window.onload = function() {
+        window.onload = function () {
             const savedPage = localStorage.getItem('currentPage');
             if (savedPage && savedPage !== 'home') {
                 // 找到对应的按钮并触发点击
@@ -228,10 +233,11 @@
 
         // 监听所有iframe的加载事件
         document.querySelectorAll('iframe').forEach(iframe => {
-            iframe.addEventListener('load', function() {
+            iframe.addEventListener('load', function () {
                 hideLoading();
             });
         });
     </script>
 </body>
+
 </html>
