@@ -16,11 +16,11 @@
             <button class="nav-button active" onclick="loadPage('home', 'welcome.html')">
                 <span class="icon">🏠</span> 首页
             </button>
-            <button class="nav-button" onclick="loadPage('profile', 'user_import.html')">
-                <span class="icon">👤</span> 用户导入
+            <button class="nav-button" onclick="loadPage('user_import', 'user_import.html')">
+                <span class="icon">🙍</span> 用户导入
             </button>
-            <button class="nav-button" onclick="loadPage('messages', 'https://example.com/messages')">
-                <span class="icon">💬</span> 消息中心
+            <button class="nav-button" onclick="loadPage('quiz_import', 'quiz_import.html')">
+                <span class="icon">📋</span> 试题导入
             </button>
             <button class="nav-button" onclick="loadPage('analytics', 'https://example.com/analytics')">
                 <span class="icon">📊</span> 数据分析
@@ -67,8 +67,8 @@
 
                 <!-- iframe元素 -->
                 <iframe id="home" class="active"></iframe>
-                <iframe id="profile" src=""></iframe>
-                <iframe id="messages" src=""></iframe>
+                <iframe id="user_import" src=""></iframe>
+                <iframe id="quiz_import" src=""></iframe>
                 <iframe id="analytics" src=""></iframe>
                 <iframe id="settings" src=""></iframe>
                 <iframe id="help" src=""></iframe>
@@ -82,8 +82,8 @@
         // 页面URL映射
         const pageUrls = {
             'home': 'welcome.html',
-            'profile': 'user_import.html',
-            'messages': 'https://example.com/messages',
+            'user_import': 'user_import.html',
+            'quiz_import': 'quiz_import.html',
             'analytics': 'https://example.com/analytics',
             'settings': 'config.html',
             'help': 'https://example.com/help'
@@ -92,8 +92,8 @@
         // 页面标题映射
         const pageTitles = {
             'home': '首页',
-            'profile': '用户导入',
-            'messages': '消息中心',
+            'user_import': '用户导入',
+            'quiz_import': '试题导入',
             'analytics': '数据分析',
             'settings': '系统设置',
             'help': '帮助中心'

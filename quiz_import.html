@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel上传与表单提交</title>
+    <script src="./assets/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .upload-area {
+            border: 2px dashed #4CAF50;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            background-color: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            background-color: #f0f0f0;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            background-color: #e8f5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .preview-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .preview-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #f44336;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* 添加拖拽相关样式 */
+        .upload-area.dragover {
+            background-color: #e8f5e9;
+            border-color: #2e7d32;
+        }
+
+        /* 添加loading相关样式 */
+        #loadingMask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-content p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 在container内添加loading遮罩 -->
+        <div id="loadingMask" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>正在提交数据...</p>
+            </div>
+        </div>
+        <h1>试题导入</h1>
+
+        <div id="alert" class="alert"></div>
+
+        <!-- 表单部分 -->
+        <form id="mainForm">
+            <div class="form-group">
+                <label>PERSON TOKEN *</label>
+                <input type="text" id="person_token" name="person_token" required>
+            </div>
+
+            <div class="form-group">
+                <label>APP TOKEN *</label>
+                <input type="text" id="app_token" name="app_token" required>
+            </div>
+            <!-- <div class="form-group">
+                <label>答案表 TABLE ID *</label>
+                <input type="text" id="answer_table_id" name="answer_table_id" required>
+            </div> -->
+            <div class="form-group">
+                <label>考题表名称 *</label>
+                <input type="text" id="question_name" name="question_name" required>
+            </div>
+
+
+            <!-- <div class="form-group">
+                <label>部门</label>
+                <select name="department">
+                    <option value="">请选择</option>
+                    <option value="销售部">销售部</option>
+                    <option value="技术部">技术部</option>
+                    <option value="人事部">人事部</option>
+                </select>
+            </div> -->
+
+            <!-- <div class="form-group">
+                <label>备注</label>
+                <textarea name="notes" rows="3"></textarea>
+            </div> -->
+        </form>
+
+        <!-- Excel上传 -->
+        <div class="upload-area" id="uploadArea">
+            <p>📁 点击或拖拽Excel文件到此处</p>
+            <p style="font-size: 14px; color: #666;">支持 .xlsx, .xls 格式</p>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+
+        <div id="fileInfo" class="file-info"></div>
+
+        <!-- 数据预览表格 -->
+        <table id="previewTable" class="preview-table"></table>
+
+        <!-- 按钮组 -->
+        <div class="button-group">
+            <button type="button" class="btn-secondary" id="resetBtn">重置</button>
+            <button type="button" class="btn-primary" id="submitBtn">提交数据</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import DBStorage from './assets/dbStorage.js';
+        const dbStorage = new DBStorage('feishu', 'config');
+        var config = {};
+        var moduelName = 'quiz';
+        dbStorage.getItem(`${moduelName}_person_token`).then(value => {
+            if (value) {
+                document.getElementById("person_token").value = value;
+            }
+        });
+        dbStorage.getItem(`${moduelName}_app_token`).then(value => {
+            if (value) {
+                document.getElementById("app_token").value = value;
+            }
+        });
+        // dbStorage.getItem(`${moduelName}_answer_table_id`).then(value => {
+        //     if (value) {
+        //         document.getElementById("answer_table_id").value = value;
+        //     }
+        // });
+        let excelData = null;
+        let formObject = {};
+        let uploadedFileName = '';
+
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+        // 处理文件上传
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            uploadedFileName = file.name;
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // 读取第一个工作表
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    excelData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    // 显示文件信息
+                    showFileInfo(file);
+
+                    // 预览数据
+                    // previewData(excelData);
+
+                    showAlert('文件上传成功！', 'success');
+                } catch (error) {
+                    showAlert('文件解析失败：' + error.message, 'error');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleData() {
+            let records = [];
+            let columns = [];
+            let n = 0;
+
+            for (let i = 0; i < excelData.length; i++) {
+                const row = excelData[i];
+                if (row[0] && row[0].includes("题目")) {
+                    n++;
+                    const item = {
+                        "fields": {
+                            "问题": row[1],
+                            "答案": row[2],
+                            "分值": 0
+                        }
+                    };
+                    records.push(item);
+
+                    const column = {
+                        "question": row[1],
+                        "answer": row[2],
+                        "score": 0,
+                        "options": []
+                    };
+                    columns.push(column);
+                } else if (columns.length > 0) {
+                    // 向最后一个问题添加选项
+                    columns[columns.length - 1].options.push(row[1]);
+                }
+            }
+
+            // 计算分值
+            const score = n > 0 ? 100 / n : 0;
+            records.forEach(item => {
+                item.fields.分值 = score;
+            });
+            columns.forEach(item => {
+                item.score = score;
+            });
+
+            console.log("处理后的记录：", records);
+            console.log("题目详情：", columns);
+            return { records, columns  };
+        }
+
+        function createFormula(index){
+            var questionTableId = `tblQTSVJzKEHxG1p`; // 题目表ID
+            var questionFieldId = `flduXZ2CNf`; // 题目字段ID
+            var questionScoreFieldId = `fldW0IdrCF`; // 题目分数字段ID
+            var anwserTableId = `tblh3qGj7aYch9c6`; // 题库表ID
+            var answerFieldId = `fldfHLjCUN`; // 参考答案字段ID
+            var scoreFieldId = `fldr0fHWp8`; // 分数字段ID
+            var score = 5; // 每题分值
+            var formula1 = `
+                "property": {
+                    "filter_info": {
+                        "conditions": {
+                            "children": [
+                                {
+                                    "field_id": "${answerFieldId}",
+                                    "field_type": 1,
+                                    "operator": "is",
+                                    "value": null
+                                }
+                            ],
+                            "conjunction": "and"
+                        },
+                        "target_table": "${anwserTableId}"
+                    },
+                    "formatter": "0",
+                    "formula": "bitable::$table[${anwserTableId}].FILTER(CurrentValue.$column[${answerFieldId}]=bitable::$table[${questionTableId}].$field[${questionFieldId}]).$column[${scoreFieldId}].LISTCOMBINE().UNIQUE()",
+                    "roll_up": 6,
+                    "target_field": "${scoreFieldId}"
+                }
+            `;
+            var formula2 = `
+                "property": {
+                    "formatter": "",
+                    "formula_expression": "IF(bitable::$table[${questionTableId}].$field[${questionScoreFieldId}]=${score},\"✅\",\"❌\")"
+                },
+            `;
+
+        }
+
+        async function createField1(item){
+            var field = 
+            {
+                "description": {"text":"修改名称、类型、选项，设计自己的考题"},
+                "field_name": item.question,
+                "is_hidden": false,
+                "is_primary": false,
+                "property": {
+                    "options": [
+                    ]
+                },
+                "type": 3,
+                "ui_type": "SingleSelect"
+            };
+            var n = 4;
+            item.options.forEach(option => {
+                var opt = {
+                    "color": n++,
+                    "name": option
+                };
+                field.property.options.push(opt);
+            });
+
+            return await addFieldApi(field);
+        }
+        async function createField2(item,questionAnswerFieldId,index){
+            var field = 
+            {
+                "description": {"text":"查找引用字段，根据考试人提交的答案自动判定是否得分，无需修改"},
+                "field_name": `分数 ${index}`,
+                "is_hidden": false,
+                "is_primary": false,
+                "property": {
+                    "formatter": "",
+                    "formula_expression": `IF(bitable::$table[${formObject.questionTableId}].$field[${questionAnswerFieldId}]="${item.answer}",${item.score},0)`
+                },
+                "type": 20,
+                "ui_type": "Formula"
+            };
+            return await addFieldApi(field);
+        }
+        async function createField3(item,questionScoreFieldId,index){
+            var field = 
+            {
+                "description": {"text":"根据得分情况自动判断答题结果，并用于推送考试结果，如果分值未发生变化，则无需修改"},
+                "field_name": `答题${index}结果`,
+                "is_hidden": false,
+                "is_primary": false,
+                "property": {
+                    "formatter": "",
+                    "formula_expression": `IF(bitable::$table[${formObject.questionTableId}].$field[${questionScoreFieldId}]=${item.score},"✅","❌")`
+                },
+                "type": 20,
+                "ui_type": "Formula"
+            };
+            return await addFieldApi(field);
+        }
+        async function addFieldApi(field){
+            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables/${formObject.questionTableId}/fields`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": `Bearer ${formObject.person_token}`
+                    },
+                    body: JSON.stringify(field) // 需要手动将对象转为JSON字符串
+                });
+
+                // 解析JSON响应
+                const result = await response.json();
+                console.log(result)
+                // 检查HTTP响应状态
+                if (!response.ok) {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
+                    return null;
+                }
+
+
+
+                // 检查飞书API返回的code
+                if (result.code === 0) {
+                    showAlert('数据提交成功！', 'success');
+                    return result.data.field.field_id;
+                } else {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`addFieldApi API错误: ${result.msg} (错误码: ${result.code})`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                showAlert(`请求发生错误 ${error}`, 'error');
+                return null;
+            }
+        }
+        async function updateFieldApi(field){
+            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables/${formObject.questionTableId}/fields/${field.field_id}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": `Bearer ${formObject.person_token}`
+                    },
+                    body: JSON.stringify(field) // 需要手动将对象转为JSON字符串
+                });
+
+                // 解析JSON响应
+                const result = await response.json();
+                console.log(result)
+                // 检查HTTP响应状态
+                if (!response.ok) {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`updateFieldApi API错误: ${response.msg} (错误码: ${response.code})`, 'error');
+                    return null;
+                }
+                // 检查飞书API返回的code
+                if (result.code === 0) {
+                    showAlert('数据提交成功！', 'success');
+                    return result.data.field.field_id;
+                } else {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`API错误: ${result.msg} (错误码: ${result.code})`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                showAlert(`请求发生错误 ${error}`, 'error');
+                return null;
+            }
+        }
+
+        async function createQuestionTable(tableName) {
+            var tableInfo = {
+                "table": {
+                    "name": tableName,
+                    "default_view_name": "表格",
+                    "fields": [
+                        {
+                            "field_name": "考试时间",
+                            "is_hidden": false,
+                            "is_primary": true,
+                            "property": {
+                                "auto_fill": true,
+                                "date_formatter": "yyyy/MM/dd HH:mm"
+                            },
+                            "type": 5,
+                            "ui_type": "DateTime"
+                        },
+                        {
+                            "field_name": "考试人",
+                            "is_hidden": false,
+                            "is_primary": false,
+                            "property": null,
+                            "type": 1003,
+                            "ui_type": "CreatedUser"
+                        },
+                        {
+                            "field_name": "总分",
+                            "is_hidden": false,
+                            "is_primary": false,
+                            "property": {
+                                "formatter": "",
+                                "formula_expression": ""
+                            },
+                            "type": 20,
+                            "ui_type": "Formula"
+                        },
+                        {
+                            "field_name": "是否及格",
+                            "is_hidden": false,
+                            "is_primary": false,
+                            "property": {
+                                "formatter": "",
+                                "formula_expression": ""
+                            },
+                            "type": 20,
+                            "ui_type": "Formula"
+                        }
+                    ]
+                }
+            };
+
+
+            // 请求配置
+            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": `Bearer ${formObject.person_token}`
+                    },
+                    body: JSON.stringify(tableInfo) // 需要手动将对象转为JSON字符串
+                });
+
+                // 解析JSON响应
+                const result = await response.json();
+                console.log(result)
+                // 检查HTTP响应状态
+                if (!response.ok) {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
+                    return null;
+                }
+
+                // 检查飞书API返回的code
+                if (result.code === 0) {
+                    showAlert('数据提交成功！', 'success');
+                    return result.data;
+                } else {
+                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                    showAlert(`API错误: ${result.msg} (错误码: ${result.code})`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                console.log(error)
+                showAlert(`请求发生错误 ${error}`, 'error');
+                return null;
+            }
+        }
+
+        // 显示文件信息
+        function showFileInfo(file) {
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.innerHTML = `
+                <strong>已上传文件：</strong>${file.name}<br>
+                <strong>文件大小：</strong>${(file.size / 1024).toFixed(2)} KB
+            `;
+            fileInfo.style.display = 'block';
+        }
+
+
+        document.getElementById('submitBtn').addEventListener('click', submitData);
+        // 提交数据
+        async function submitData() {
+            const form = document.getElementById('mainForm');
+
+            // 验证表单
+            if (!form.checkValidity()) {
+                showAlert('请填写必填项！', 'error');
+                form.reportValidity();
+                return;
+            }
+            if(excelData ==null){
+                showAlert('请上传Excel文件！', 'error');
+                return;
+            }
+            // 显示loading
+            document.getElementById('loadingMask').style.display = 'flex';
+
+            // 收集表单数据
+            const formData = new FormData(form);
+            formObject = {};
+            formData.forEach((value, key) => {
+                formObject[key] = value;
+                dbStorage.setItem(`${moduelName}_${key}`, value);
+            });
+            var { records, columns  } = handleData();
+            // var answerFieldIds = await createAnswers(records, formObject);
+            var questionTableInfo = await createQuestionTable(formObject.question_name);
+            console.log("创建题目表结果：", questionTableInfo);
+            formObject.questionTableId = questionTableInfo.table_id;
+            var scoreFields = await upsetQuestionField(columns);
+            console.log("创建题目字段结果：", scoreFields);
+            var sumFieldId = await upsetSumField(questionTableInfo.field_id_list[2],scoreFields);
+            console.log("更新总分字段结果：", sumFieldId);
+            var passFieldId = await upsetPassField(questionTableInfo.field_id_list[3],sumFieldId);
+            console.log("更新及格字段结果：", passFieldId);
+            document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+
+        }
+        async function createAnswers(records, formObject) {
+            // 请求数据
+            const data = {
+                "records": records
+            };
+
+            // 请求配置
+            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables/${formObject.answer_table_id}/records/batch_create`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": `Bearer ${formObject.person_token}`
+                    },
+                    body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
+                });
+
+                // 解析JSON响应
+                const result = await response.json();
+                console.log(response.json())
+                // 检查HTTP响应状态
+                if (!response.ok) {
+                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
+                    return null;
+                }
+                // 检查飞书API返回的code
+                if (result.code === 0) {
+                    showAlert('数据提交成功！', 'success');
+                    return result;
+                } else {
+                    showAlert(`API错误: ${result.msg} (错误码: ${result.code})`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                showAlert(`请求发生错误 ${error}`, 'error');
+                return null;
+            }
+        }
+        
+        async function upsetQuestionField(columns){
+            var scoreFields = [];
+            for (let i = 0; i < columns.length; i++) {
+                const column = columns[i];
+                var field1 = await createField1(column);
+                console.log(i," 创建题目字段1结果：", field1);
+                var field2 = await createField2(column,field1,i+1);
+                console.log(i," 创建题目字段2结果：", field2);
+                scoreFields.push(field2);
+                var field3 = await createField3(column,field2,i+1);
+                console.log(i," 创建题目字段3结果：", field3);
+            }
+            return scoreFields;
+        }
+        async function upsetSumField(id,scoreFields){
+            var formula = "SUM(";
+            scoreFields.forEach(fieldId => {
+                formula += `bitable::$table[${formObject.questionTableId}].$field[${fieldId}],`;
+            });
+            formula = formula.slice(0, -1) + ")"; // 去掉最后一个逗号并添加闭括号
+            var field = 
+            {
+                "field_id": id,
+                "field_name": "总分",
+                "is_hidden": false,
+                "is_primary": false,
+                "property": {
+                    "formatter": "",
+                    "formula_expression": formula
+                },
+                "type": 20,
+                "ui_type": "Formula"
+            };
+            return await updateFieldApi(field);
+        }
+        async function upsetPassField(id,sumFieldId){
+            var field = 
+            {
+                "field_id": id,
+                "field_name": "是否及格",
+                "is_hidden": false,
+                "is_primary": false,
+                "property": {
+                    "formatter": "",
+                    "formula_expression": `IF(bitable::$table[${formObject.questionTableId}].$field[${sumFieldId}]>=80,"及格","不及格")`
+                },
+                "type": 20,
+                "ui_type": "Formula"
+            };
+            return await updateFieldApi(field);
+        }
+        
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+        // 重置所有
+        function resetAll() {
+            document.getElementById('mainForm').reset();
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('previewTable').style.display = 'none';
+            document.getElementById('alert').style.display = 'none';
+            excelData = null;
+            uploadedFileName = '';
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 10000);
+            if (type === 'error'){
+                throw new Error(message);
+            }
+
+        }
+
+
+        // 添加拖拽相关的JavaScript代码
+        document.addEventListener('DOMContentLoaded', function () {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // 点击上传
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            // 阻止默认拖拽行为
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // 高亮拖拽区域
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            // 处理文件拖放
+            uploadArea.addEventListener('drop', handleDrop, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            document.getElementById('uploadArea').classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            document.getElementById('uploadArea').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                const file = files[0];
+                // 验证文件类型
+                if (file.name.match(/\.(xlsx|xls)$/i)) {
+                    // 模拟文件选择事件
+                    const fileInput = document.getElementById('fileInput');
+                    fileInput.files = files;
+                    handleFile({ target: { files: files } });
+                } else {
+                    showAlert('请上传Excel文件（.xlsx或.xls格式）', 'error');
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -424,15 +424,14 @@
                     body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
                 });
                 document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
+                // 解析JSON响应
+                const result = await response.json();
                 // 检查HTTP响应状态
                 if (!response.ok) {
                     console.log(response.json())
                     showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
                     return null;
                 }
-
-                // 解析JSON响应
-                const result = await response.json();
 
                 // 检查飞书API返回的code
                 if (result.code === 0) {
@@ -444,7 +443,7 @@
                 }
             } catch (error) {
                 document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                showAlert(`请求发生错误 ${error.message}`, 'error');
+                showAlert(`请求发生错误 ${error}`, 'error');
                 return null;
             }
         }
