@@ -22,8 +22,11 @@
             <button class="nav-button" onclick="loadPage('quiz_import', 'quiz_import.html')">
                 <span class="icon">📋</span> 试题导入
             </button>
-            <button class="nav-button" onclick="loadPage('analytics', 'https://example.com/analytics')">
-                <span class="icon">📊</span> 数据分析
+            <button class="nav-button" onclick="loadPage('aggregate', 'aggregate.html')">
+                <span class="icon">📊</span> 数据汇总
+            </button>
+            <button class="nav-button" onclick="loadPage('deduplication', 'deduplication.html')">
+                <span class="icon">📊</span> 数据去重
             </button>
             <button class="nav-button" onclick="loadPage('settings', 'config.html')">
                 <span class="icon">⚙️</span> 系统设置
@@ -69,7 +72,8 @@
                 <iframe id="home" class="active"></iframe>
                 <iframe id="user_import" src=""></iframe>
                 <iframe id="quiz_import" src=""></iframe>
-                <iframe id="analytics" src=""></iframe>
+                <iframe id="aggregate" src=""></iframe>
+                <iframe id="deduplication" src=""></iframe>
                 <iframe id="settings" src=""></iframe>
                 <iframe id="help" src=""></iframe>
             </div>
@@ -84,7 +88,8 @@
             'home': 'welcome.html',
             'user_import': 'user_import.html',
             'quiz_import': 'quiz_import.html',
-            'analytics': 'https://example.com/analytics',
+            'aggregate': 'aggregate.html',
+            'deduplication': 'deduplication.html',
             'settings': 'config.html',
             'help': 'https://example.com/help'
         };
@@ -94,7 +99,8 @@
             'home': '首页',
             'user_import': '用户导入',
             'quiz_import': '试题导入',
-            'analytics': '数据分析',
+            'aggregate': '数据分析',
+            'deduplication': '数据去重',
             'settings': '系统设置',
             'help': '帮助中心'
         };

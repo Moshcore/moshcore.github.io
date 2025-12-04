@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 数据合并工具</title>
+    <script src="./assets/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload-area.drag-over {
+            border-color: #667eea;
+            background: #e0e7ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Excel 数据合并工具</h1>
+
+        <!-- 上传区域 -->
+        <div class="upload-section">
+            <div class="file-upload-area" id="dropArea">
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                <p style="font-size: 48px; margin-bottom: 10px;">📁</p>
+                <p style="font-weight: 600; color: #333;">点击或拖拽 Excel 文件到这里</p>
+                <p style="font-size: 13px; color: #9ca3af; margin-top: 8px;">支持 .xlsx 和 .xls 格式</p>
+                <p id="fileName" style="margin-top: 15px; color: #059669; font-weight: 500;"></p>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="originalCount">0</div>
+                <div class="stat-label">原始数据行数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="mergedCount">0</div>
+                <div class="stat-label">合并后行数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="duplicateCount">0</div>
+                <div class="stat-label">合并的行数</div>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        <div id="message" class="message"></div>
+
+        <!-- 操作按钮 -->
+        <div style="text-align: center; margin: 20px 0;" id="actionButtons" style="display: none;">
+            <button class="btn btn-success" onclick="exportMergedData()">
+                📥 导出合并后的数据
+            </button>
+        </div>
+
+        <!-- 数据预览标签 -->
+        <!-- <div class="tabs" id="tabsContainer" style="display: none;">
+            <button class="tab active" onclick="switchTab('original')">原始数据</button>
+            <button class="tab" onclick="switchTab('merged')">合并后数据</button>
+        </div> -->
+
+        <!-- 原始数据 -->
+        <!-- <div id="originalData" class="tab-content active">
+            <div class="table-container">
+                <table id="originalTable"></table>
+            </div>
+        </div> -->
+
+        <!-- 合并后数据 -->
+        <!-- <div id="mergedData" class="tab-content">
+            <div class="table-container">
+                <table id="mergedTable"></table>
+            </div> -->
+        </div>
+    </div>
+
+    <script>
+        let originalData = [];
+        let mergedData = [];
+
+        // 文件上传处理
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => {
+                dropArea.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => {
+                dropArea.classList.remove('drag-over');
+            });
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 处理文件
+        function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showMessage('请上传 Excel 文件 (.xlsx 或 .xls)', 'error');
+                return;
+            }
+
+            document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) {
+                        showMessage('Excel 文件中没有数据', 'error');
+                        return;
+                    }
+
+                    originalData = jsonData;
+                    processData(jsonData);
+                } catch (error) {
+                    showMessage('读取文件失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 处理和合并数据
+        function processData(data) {
+            // 按 ID 分组
+            const groupedData = {};
+            
+            data.forEach(row => {
+                const id = row['ID'] || row['id'] || row['Id'];
+                
+                if (!id) {
+                    console.warn('发现没有 ID 的行:', row);
+                    return;
+                }
+
+                if (!groupedData[id]) {
+                    groupedData[id] = [];
+                }
+                groupedData[id].push(row);
+            });
+
+            // 合并数据
+            mergedData = Object.entries(groupedData).map(([id, rows]) => {
+                return mergeRows(rows);
+            });
+
+            // 显示统计信息
+            document.getElementById('originalCount').textContent = data.length;
+            document.getElementById('mergedCount').textContent = mergedData.length;
+            document.getElementById('duplicateCount').textContent = data.length - mergedData.length;
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('actionButtons').style.display = 'block';
+            // document.getElementById('tabsContainer').style.display = 'flex';
+
+            // 显示表格
+            // displayTable(data, 'originalTable');
+            // displayTable(mergedData, 'mergedTable');
+
+            showMessage(`成功合并数据！原始 ${data.length} 行，合并后 ${mergedData.length} 行`, 'success');
+        }
+        
+        // 定义字段格式化配置
+        const fieldFormatters = {
+            '观看完整度': (value) => {
+                if (value === null || value === undefined || value === '') return '';
+                const str = String(Math.round(value*100));
+                return str.includes('%') ? str : str + '%';
+            },
+            // '在线时长': (value) => {
+            //     if (value === null || value === undefined || value === '') return '';
+            //     return String(value);  // 可以添加其他格式，如 "25分钟"
+            // },
+            // '课后测试得分': (value) => {
+            //     if (value === null || value === undefined || value === '') return '';
+            //     return String(value);  // 可以添加其他格式，如 "80分"
+            // }
+        };
+
+
+        // 应用字段格式化
+        function applyFormatters(row) {
+            const formatted = { ...row };
+            
+            Object.entries(fieldFormatters).forEach(([field, formatter]) => {
+                if (formatted[field] !== undefined) {
+                    formatted[field] = formatter(formatted[field]);
+                }
+            });
+            
+            return formatted;
+        }
+
+        // 合并多行数据（取最大值）
+        function mergeRows(rows) {
+            if (rows.length === 1) {
+                return applyFormatters(rows[0]);
+            }
+
+            const merged = { ...rows[0] };
+
+            // 定义需要取最大值的字段
+            const maxFields = [
+                '在线时长',
+                '观看完整度',
+                '课后测试得分'
+            ];
+
+            // 定义优先级字段
+            const priorityFields = {
+                '是否参加考试': ['Y', 'N'],  // Y 优先
+                '是否及格': ['及格', '不及格'],  // 及格优先
+                '备注': ['出勤达标', '请假', '出勤不达标']  // 按优先级排序
+            };
+
+            rows.forEach(row => {
+                // 处理数值型字段（取最大值）
+                maxFields.forEach(field => {
+                    const currentValue = parseFieldValue(merged[field]);
+                    const newValue = parseFieldValue(row[field]);
+                    
+                    if (newValue > currentValue) {
+                        merged[field] = row[field];
+                    }
+                });
+
+                // 处理优先级字段
+                Object.entries(priorityFields).forEach(([field, priorities]) => {
+                    const currentValue = merged[field];
+                    const newValue = row[field];
+                    
+                    if (shouldReplace(currentValue, newValue, priorities)) {
+                        merged[field] = newValue;
+                    }
+                });
+
+                // 其他字段保留第一个非空值
+                Object.keys(row).forEach(key => {
+                    if (!maxFields.includes(key) && !priorityFields[key]) {
+                        if (!merged[key] && row[key]) {
+                            merged[key] = row[key];
+                        }
+                    }
+                });
+            });
+
+            // 应用格式化
+            return applyFormatters(merged);
+        }
+
+        // 解析字段值为数值
+        function parseFieldValue(value) {
+            if (value === null || value === undefined || value === '') {
+                return -Infinity;
+            }
+
+            // 处理百分比
+            if (typeof value === 'string' && value.includes('%')) {
+                return parseInt(value.replace('%', ''));
+            }
+
+            // 处理纯数字
+            const num = parseInt(value);
+            return isNaN(num) ? -Infinity : num;
+        }
+
+        // 判断是否应该替换值（根据优先级）
+        function shouldReplace(currentValue, newValue, priorities) {
+            if (!currentValue) return true;
+            if (!newValue) return false;
+
+            const currentIndex = priorities.indexOf(currentValue);
+            const newIndex = priorities.indexOf(newValue);
+
+            // 如果新值在优先级列表中且位置更靠前，则替换
+            if (newIndex !== -1 && (currentIndex === -1 || newIndex < currentIndex)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // 显示表格
+        function displayTable(data, tableId) {
+            const table = document.getElementById(tableId);
+            
+            if (data.length === 0) {
+                table.innerHTML = '<tr><td>暂无数据</td></tr>';
+                return;
+            }
+
+            // 创建表头
+            const headers = Object.keys(data[0]);
+            let html = '<thead><tr>';
+            headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // 创建表体
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<td>${row[header] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        // 导出合并后的数据
+        function exportMergedData() {
+            if (mergedData.length === 0) {
+                showMessage('没有可导出的数据', 'error');
+                return;
+            }
+
+            const ws = XLSX.utils.json_to_sheet(mergedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '合并后数据');
+
+            const fileName = `合并数据_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            showMessage('导出成功！', 'success');
+        }
+        // 切换标签
+        function switchTab(tabName) {
+            // 更新标签状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 显示对应内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Data').classList.add('active');
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = `message ${type} show`;
+            
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 15000);
+        }
+    </script>
+</body>
+</html>

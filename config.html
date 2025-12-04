@@ -3,318 +3,467 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>配置管理系统</title>
+    <title>IndexedDB 导入导出工具</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 30px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
-        
+
         h1 {
             color: #333;
             margin-bottom: 30px;
             text-align: center;
+            font-size: 28px;
         }
-        
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         label {
             display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-        }
-        
-        input[type="text"],
-        input[type="number"],
-        input[type="email"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
             font-size: 14px;
-            transition: border-color 0.3s;
         }
-        
-        input:focus,
-        select:focus,
-        textarea:focus {
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
-        textarea {
-            resize: vertical;
-            min-height: 100px;
+
+        .file-upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s;
+            cursor: pointer;
         }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
         }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
+
+        .file-upload-area.drag-over {
+            border-color: #667eea;
+            background: #e0e7ff;
         }
-        
-        button {
-            flex: 1;
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
             padding: 12px 24px;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
         .btn-primary {
-            background-color: rgb(59 130 246 / var(--tw-bg-opacity, 1));
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
+
         .btn-primary:hover {
-            background-color: rgb(59 130 246 / var(--tw-bg-opacity, 0.9));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
-        
-        .btn-secondary {
-            background-color: #f44336;
+
+        .btn-success {
+            background: #10b981;
             color: white;
         }
-        
-        .btn-secondary:hover {
-            background-color: #da190b;
+
+        .btn-success:hover {
+            background: #059669;
         }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: #666;
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
         }
-        
-        .message {
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .stats-box {
+            background: white;
             padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 15px;
             display: none;
         }
-        
+
         .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
         }
-        
+
         .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
         }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4CAF50;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+
+        .message.show {
+            display: block;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .checkbox-group {
+            margin: 15px 0;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>系统配置管理</h1>
-        
-        <div class="message" id="message"></div>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>加载中...</p>
-        </div>
-        
-        <form id="configForm" style="display: none;">
-            <div class="form-group">
-                <label for="app_token">APP TOKEN</label>
-                <input type="text" id="app_token" name="app_token" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="person_token">用户 TOKEN</label>
-                <input type="text" id="person_token" name="person_token" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="sub_domain">子域名</label>
-                <input type="email" id="sub_domain" name="sub_domain" required>
-            </div>
-            <div class="form-group">
-                <label for="proxy_url">子域名</label>
-                <input type="email" id="proxy_url" name="proxy_url" required>
-            </div>
+        <h1>📦 IndexedDB 导入导出工具</h1>
 
-<!--             
+        <!-- 数据库配置 -->
+        <div class="section">
+            <h2>数据库配置</h2>
             <div class="form-group">
-                <label for="language">语言设置</label>
-                <select id="language" name="language">
-                    <option value="zh-CN">简体中文</option>
-                    <option value="zh-TW">繁体中文</option>
-                    <option value="en-US">English</option>
-                    <option value="ja-JP">日本語</option>
-                </select>
-            </div> -->
-            
+                <label for="dbName">数据库名称</label>
+                <input type="text" id="dbName" value="feishu" placeholder="输入数据库名称">
+            </div>
             <div class="form-group">
-                <label for="cookies">网站Cookies</label>
-                <textarea id="cookies" name="cookies" rows="4"></textarea>
+                <label for="dbVersion">数据库版本</label>
+                <input type="number" id="dbVersion" value="1" min="1">
             </div>
-            
-            <div class="button-group">
-                <button type="submit" class="btn-primary">保存配置</button>
-                <button type="button" class="btn-secondary" onclick="resetForm()">重置</button>
+            <button class="btn btn-primary" onclick="initDB()">
+                <span>🔌</span> 连接数据库
+            </button>
+            <button class="btn btn-success" onclick="showStats()">
+                <span>📊</span> 查看统计
+            </button>
+            <div id="statsContainer"></div>
+        </div>
+
+        <!-- 导出数据 -->
+        <div class="section">
+            <h2>导出数据</h2>
+            <button class="btn btn-primary" onclick="exportDB()">
+                <span>📥</span> 导出数据库
+            </button>
+            <div id="exportMessage" class="message"></div>
+        </div>
+
+        <!-- 导入数据 -->
+        <div class="section">
+            <h2>导入数据</h2>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="clearExisting" checked>
+                    导入前清空现有数据
+                </label>
+                <label>
+                    <input type="checkbox" id="mergeData">
+                    合并模式（保留现有数据）
+                </label>
             </div>
-        </form>
+            <div class="file-upload-area" id="fileUploadArea">
+                <input type="file" id="fileInput" class="file-input" accept=".json">
+                <p style="margin: 10px 0; color: #667eea; font-size: 40px;">📁</p>
+                <p style="font-weight: 600; color: #333;">点击或拖拽文件到这里</p>
+                <p style="font-size: 13px; color: #9ca3af; margin-top: 8px;">支持 .json 格式</p>
+                <p id="selectedFileName" style="margin-top: 15px; color: #059669; font-weight: 500;"></p>
+            </div>
+            <button class="btn btn-success" onclick="importDB()" style="margin-top: 15px;">
+                <span>📤</span> 导入数据库
+            </button>
+            <div id="importMessage" class="message"></div>
+        </div>
+
+        <!-- 危险操作 -->
+        <div class="section">
+            <h2>⚠️ 危险操作</h2>
+            <button class="btn btn-danger" onclick="clearDB()">
+                <span>🗑️</span> 清空数据库
+            </button>
+            <button class="btn btn-danger" onclick="deleteDB()">
+                <span>💣</span> 删除数据库
+            </button>
+        </div>
     </div>
 
+    <script src="./assets/indexeddb-manager.js"></script>
     <script>
-        const host = 'http://localhost:5000'
-        // API配置
-        const API_CONFIG = {
-            getUrl: `${host}/api/config`,  // 获取配置的接口
-            saveUrl: `${host}/api/config`  // 保存配置的接口
-        };
-        
-        // 显示消息
-        function showMessage(message, type = 'success') {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = message;
-            messageEl.className = `message ${type}`;
-            messageEl.style.display = 'block';
-            
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 3000);
-        }
-        
-        // 显示/隐藏加载状态
-        function toggleLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('configForm').style.display = show ? 'none' : 'block';
-        }
-        
-        // 从接口加载配置
-        async function loadConfig() {
-            toggleLoading(true);
-            
-            try {
-                const response = await fetch(API_CONFIG.getUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const config = await response.json();
-                
-                // 填充表单
-                document.getElementById('app_token').value = config.app_token || '';
-                document.getElementById('person_token').value = config.person_token || '';
-                document.getElementById('sub_domain').value = config.sub_domain || '';
-                document.getElementById('proxy_url').value = config.proxy_url || '';
+        let dbManager = null;
 
-                document.getElementById('cookies').value = config.cookies || '';
-                
-                toggleLoading(false);
-                showMessage('配置加载成功', 'success');
-                
+        // 初始化数据库
+        async function initDB() {
+            const dbName = document.getElementById('dbName').value;
+            const dbVersion = parseInt(document.getElementById('dbVersion').value);
+
+            try {
+                dbManager = new IndexedDBManager(dbName, dbVersion);
+                await dbManager.openDB();
+                showMessage('exportMessage', '数据库连接成功！', 'success');
             } catch (error) {
-                console.error('加载配置失败:', error);
-                toggleLoading(false);
-                showMessage('加载配置失败: ' + error.message, 'error');
+                showMessage('exportMessage', '连接失败: ' + error.message, 'error');
             }
         }
-        
-        // 保存配置到接口
-        async function saveConfig(formData) {
+
+        // 导出数据库
+        async function exportDB() {
+            if (!dbManager) {
+                showMessage('exportMessage', '请先连接数据库', 'error');
+                return;
+            }
+
             try {
-                const response = await fetch(API_CONFIG.saveUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
+                const filename = `${dbManager.dbName}_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                await dbManager.exportToFile(filename);
+                showMessage('exportMessage', '导出成功！', 'success');
+            } catch (error) {
+                showMessage('exportMessage', '导出失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导入数据库
+        async function importDB() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('importMessage', '请选择要导入的文件', 'error');
+                return;
+            }
+
+            if (!dbManager) {
+                await initDB();
+            }
+
+            try {
+                const clearExisting = document.getElementById('clearExisting').checked;
+                const merge = document.getElementById('mergeData').checked;
+
+                await dbManager.importFromFile(file, { clearExisting, merge });
+                showMessage('importMessage', '导入成功！', 'success');
+                
+                // 清空文件选择
+                fileInput.value = '';
+                document.getElementById('selectedFileName').textContent = '';
+            } catch (error) {
+                showMessage('importMessage', '导入失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示统计信息
+        async function showStats() {
+            if (!dbManager) {
+                showMessage('exportMessage', '请先连接数据库', 'error');
+                return;
+            }
+
+            try {
+                const stats = await dbManager.getStats();
+                const container = document.getElementById('statsContainer');
+                
+                let html = '<div class="stats-box">';
+                html += `<div class="stats-item"><strong>数据库名称:</strong> <span>${stats.dbName}</span></div>`;
+                html += `<div class="stats-item"><strong>版本:</strong> <span>${stats.version}</span></div>`;
+                
+                stats.stores.forEach(store => {
+                    html += `<div class="stats-item"><strong>${store.name}:</strong> <span>${store.count} 条记录</span></div>`;
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                showMessage('配置保存成功', 'success');
-                
+                html += '</div>';
+                container.innerHTML = html;
             } catch (error) {
-                console.error('保存配置失败:', error);
-                showMessage('保存配置失败: ' + error.message, 'error');
+                showMessage('exportMessage', '获取统计失败: ' + error.message, 'error');
             }
         }
-        
-        // 重置表单
-        function resetForm() {
-            if (confirm('确定要重置所有配置吗？')) {
-                loadConfig();
+
+        // 清空数据库
+        async function clearDB() {
+            if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                return;
+            }
+
+            if (!dbManager) {
+                showMessage('exportMessage', '请先连接数据库', 'error');
+                return;
+            }
+
+            try {
+                const data = await dbManager.exportDatabase();
+                for (const storeName of Object.keys(data.stores)) {
+                    await dbManager.importStore(storeName, { data: [], indexes: [], keyPath: null, autoIncrement: false }, false);
+                }
+                showMessage('exportMessage', '数据已清空', 'success');
+            } catch (error) {
+                showMessage('exportMessage', '清空失败: ' + error.message, 'error');
             }
         }
-        
-        // 表单提交处理
-        document.getElementById('configForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = {
-                app_token: document.getElementById('app_token').value,
-                person_token: document.getElementById('person_token').value,
-                sub_domain: document.getElementById('sub_domain').value,
-                proxy_url: document.getElementById('proxy_url').value,
-                cookies: document.getElementById('cookies').value
-            };
-            
-            await saveConfig(formData);
+
+        // 删除数据库
+        async function deleteDB() {
+            if (!confirm('确定要删除整个数据库吗？此操作不可恢复！')) {
+                return;
+            }
+
+            if (!dbManager) {
+                showMessage('exportMessage', '请先连接数据库', 'error');
+                return;
+            }
+
+            try {
+                dbManager.close();
+                await dbManager.deleteDatabase();
+                dbManager = null;
+                showMessage('exportMessage', '数据库已删除', 'success');
+            } catch (error) {
+                showMessage('exportMessage', '删除失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示消息
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `message ${type} show`;
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 5000);
+        }
+
+        // 文件拖拽处理
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        fileUploadArea.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
         });
-        
-        // 页面加载时获取配置
-        window.addEventListener('DOMContentLoaded', () => {
-            loadConfig();
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.remove('drag-over');
+            });
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileName(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                updateFileName(e.target.files[0]);
+            }
+        });
+
+        function updateFileName(file) {
+            document.getElementById('selectedFileName').textContent = `已选择: ${file.name}`;
+        }
+
+        // 页面加载时自动连接
+        window.addEventListener('load', () => {
+            initDB();
         });
     </script>
 </body>
