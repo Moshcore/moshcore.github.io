@@ -428,7 +428,7 @@
                 const result = await response.json();
                 // 检查HTTP响应状态
                 if (!response.ok) {
-                    console.log(response.json())
+                    console.log(result)
                     showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
                     return null;
                 }

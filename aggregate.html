@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据汇总</title>
-    <script src="./assets/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -256,11 +255,22 @@
             background: #f9fafb;
             border-color: #9ca3af;
         }
+
+        #alert {
+            height: 100px;
+        }
     </style>
 </head>
 
 <body>
     <div class="form-container">
+        <!-- 在container内添加loading遮罩 -->
+        <div id="loadingMask" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>正在提交数据...</p>
+            </div>
+        </div>
         <h1>📋 数据汇总</h1>
 
         <div class="collapse-controls">
@@ -268,13 +278,13 @@
             <button type="button" class="collapse-btn" onclick="collapseAll()">📁 收起全部</button>
         </div>
 
-        <form id="userForm" onsubmit="handleSubmit(event)">
+        <form id="mainForm">
             <!-- 基本信息 -->
             <div class="form-group-section active">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">👤</span>
-                        <span>基本信息</span>
+                        <span class="section-icon">🔠</span>
+                        <span>考试成绩总表</span>
                     </div>
                     <span class="toggle-icon">▼</span>
                 </div>
@@ -282,31 +292,27 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">
-                                姓名<span class="required">*</span>
+                                团队APP TOKEN<span class="required">*</span>
                             </label>
-                            <input type="text" name="name" class="form-input" placeholder="请输入姓名" required>
+                            <input type="text" id="app_token" name="app_token" class="form-input"
+                                placeholder="请输入APP TOKEN" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                性别<span class="required">*</span>
+                                团队PERSON TOKEN<span class="required">*</span>
                             </label>
-                            <select name="gender" class="form-select" required>
-                                <option value="">请选择</option>
-                                <option value="male">男</option>
-                                <option value="female">女</option>
-                                <option value="other">其他</option>
-                            </select>
+                            <input type="text" id="person_token" name="person_token" class="form-input"
+                                placeholder="请输入PERSON TOKEN" required>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">出生日期</label>
-                            <input type="date" name="birthday" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">身份证号</label>
-                            <input type="text" name="idCard" class="form-input" placeholder="请输入身份证号">
+                            <label class="form-label">
+                                TABLE ID<span class="required">*</span>
+                            </label>
+                            <input type="text" id="exam_table_id" name="exam_table_id" class="form-input"
+                                placeholder="考试成绩总表ID" required>
                         </div>
                     </div>
                 </div>
@@ -316,35 +322,26 @@
             <div class="form-group-section">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">📞</span>
-                        <span>联系方式</span>
+                        <span class="section-icon">🛗</span>
+                        <span>参会详情总表</span>
                     </div>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label class="form-label">
                             手机号码<span class="required">*</span>
                         </label>
                         <input type="tel" name="phone" class="form-input" placeholder="请输入手机号码" required>
                         <div class="form-help">请输入11位手机号码</div>
-                    </div>
+                    </div> -->
 
                     <div class="form-group">
                         <label class="form-label">
-                            电子邮箱<span class="required">*</span>
+                            TABLE ID<span class="required">*</span>
                         </label>
-                        <input type="email" name="email" class="form-input" placeholder="example@email.com" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">微信号</label>
-                        <input type="text" name="wechat" class="form-input" placeholder="请输入微信号">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">详细地址</label>
-                        <textarea name="address" class="form-textarea" placeholder="请输入详细地址"></textarea>
+                        <input type="text" id="meeting_table_id" name="meeting_table_id" class="form-input"
+                            placeholder="请输入参会详情总表ID" required>
                     </div>
                 </div>
             </div>
@@ -353,52 +350,34 @@
             <div class="form-group-section">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">🎓</span>
-                        <span>教育背景</span>
+                        <span class="section-icon">🅰️</span>
+                        <span>考试详情表</span>
                     </div>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     <div class="form-group">
-                        <label class="form-label">最高学历</label>
-                        <div class="radio-group">
-                            <div class="radio-item">
-                                <input type="radio" id="edu1" name="education" value="高中">
-                                <label for="edu1">高中及以下</label>
-                            </div>
-                            <div class="radio-item">
-                                <input type="radio" id="edu2" name="education" value="专科">
-                                <label for="edu2">专科</label>
-                            </div>
-                            <div class="radio-item">
-                                <input type="radio" id="edu3" name="education" value="本科">
-                                <label for="edu3">本科</label>
-                            </div>
-                            <div class="radio-item">
-                                <input type="radio" id="edu4" name="education" value="硕士">
-                                <label for="edu4">硕士</label>
-                            </div>
-                            <div class="radio-item">
-                                <input type="radio" id="edu5" name="education" value="博士">
-                                <label for="edu5">博士</label>
-                            </div>
-                        </div>
+                        <label class="form-label">
+                            TABLE ID<span class="required">*</span>
+                        </label>
+                        <input type="text" id="exam_detail_table_id" name="exam_detail_table_id" class="form-input"
+                            placeholder="请输入考试详情表ID" required>
                     </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">毕业院校</label>
-                            <input type="text" name="school" class="form-input" placeholder="请输入毕业院校">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">专业</label>
-                            <input type="text" name="major" class="form-input" placeholder="请输入专业">
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label class="form-label">毕业时间</label>
-                        <input type="month" name="graduationDate" class="form-input">
+                        <label class="form-label">
+                            VIEW ID<span class="required">*</span>
+                        </label>
+                        <input type="text" id="exam_detail_view_id" name="exam_detail_view_id" class="form-input"
+                            placeholder="请输入考试详情视图ID" required>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="form-group">
+                        <label class="form-label">
+                            场次<span class="required">*</span>
+                        </label>
+                        <input type="text" id="exam_detail_session" name="exam_detail_session" class="form-input"
+                            placeholder="请输入考试场次" required>
                     </div>
                 </div>
             </div>
@@ -407,181 +386,101 @@
             <div class="form-group-section">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">💼</span>
-                        <span>工作信息</span>
+                        <span class="section-icon">🚹</span>
+                        <span>参会人员详情</span>
                     </div>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
-                    <div class="form-group">
-                        <label class="form-label">公司名称</label>
-                        <input type="text" name="company" class="form-input" placeholder="请输入公司名称">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">职位</label>
-                            <input type="text" name="position" class="form-input" placeholder="请输入职位">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">入职时间</label>
-                            <input type="date" name="joinDate" class="form-input">
-                        </div>
-                    </div>
 
                     <div class="form-group">
-                        <label class="form-label">工作年限</label>
-                        <select name="workYears" class="form-select">
-                            <option value="">请选择</option>
-                            <option value="0-1">1年以内</option>
-                            <option value="1-3">1-3年</option>
-                            <option value="3-5">3-5年</option>
-                            <option value="5-10">5-10年</option>
-                            <option value="10+">10年以上</option>
-                        </select>
+                        <label class="form-label">
+                            个人APP TOKEN<span class="required">*</span>
+                        </label>
+                        <input type="text" id="private_app_token" name="private_app_token" class="form-input"
+                            placeholder="请输入APP TOKEN" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            个人PERSON TOKEN<span class="required">*</span>
+                        </label>
+                        <input type="text" id="private_person_token" name="private_person_token" class="form-input"
+                            placeholder="请输入PERSON TOKEN" required>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">技能专长</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="skill1" name="skills" value="JavaScript">
-                                <label for="skill1">JavaScript</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="skill2" name="skills" value="Python">
-                                <label for="skill2">Python</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="skill3" name="skills" value="Java">
-                                <label for="skill3">Java</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="skill4" name="skills" value="C++">
-                                <label for="skill4">C++</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 其他信息 -->
-            <div class="form-group-section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <span class="section-icon">📝</span>
-                        <span>其他信息</span>
-                    </div>
-                    <span class="toggle-icon">▼</span>
-                </div>
-                <div class="section-content">
+
                     <div class="form-group">
-                        <label class="form-label">个人简介</label>
-                        <textarea name="bio" class="form-textarea" placeholder="请简单介绍一下自己..."></textarea>
+                        <label class="form-label">
+                            TABLE ID<span class="required">*</span>
+                        </label>
+                        <input type="text" id="meeting_detail_table_id" name="meeting_detail_table_id"
+                            class="form-input" placeholder="请输入参会人员详情ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            VIEW ID<span class="required">*</span>
+                        </label>
+                        <input type="text" id="meeting_detail_view_id" name="meeting_detail_view_id" class="form-input"
+                            placeholder="请输入参会人员视图ID" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">兴趣爱好</label>
-                        <input type="text" name="hobbies" class="form-input" placeholder="如：阅读、旅游、摄影等">
+                        <label class="form-label">
+                            会议开始时间<span class="required">*</span>
+                        </label>
+                        <input type="datetime-local" id="meeting_detail_start" name="meeting_detail_start"
+                            class="form-input" placeholder="请输入TABLE ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            会议结束时间<span class="required">*</span>
+                        </label>
+                        <input type="datetime-local" id="meeting_detail_end" name="meeting_detail_end"
+                            class="form-input" placeholder="请输入PERSON TOKEN" required>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">备注</label>
-                        <textarea name="remark" class="form-textarea" placeholder="其他需要说明的信息"></textarea>
-                    </div>
                 </div>
             </div>
 
             <!-- 提交按钮 -->
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">✓ 提交表单</button>
-                <button type="reset" class="btn btn-secondary">↻ 重置</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary">✓ 提交表单</button>
+                <button type="reset" id="resetBtn" class="btn btn-secondary">↻ 重置</button>
             </div>
             <div id="alert" class="alert"></div>
         </form>
     </div>
-    <div class="container">
-        <!-- 在container内添加loading遮罩 -->
-        <div id="loadingMask" style="display: none;">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <p>正在提交数据...</p>
-            </div>
-        </div>
-        <h1>数据汇总</h1>
 
-
-
-        <!-- 表单部分 -->
-        <form id="mainForm">
-            <div class="form-group">
-                <label>PERSON TOKEN *</label>
-                <input type="text" id="person_token" name="person_token" required>
-            </div>
-
-            <div class="form-group">
-                <label>APP TOKEN *</label>
-                <input type="text" id="app_token" name="app_token" required>
-            </div>
-            <div class="form-group">
-                <label>来源TABLE ID *</label>
-                <input type="text" id="answer_table_id" name="answer_table_id" required>
-            </div>
-            <div class="form-group">
-                <label>XXX1 汇总TABLE ID *</label>
-                <input type="text" id="answer_table_id" name="answer_table_id" required>
-            </div>
-            <div class="form-group">
-                <label>XXX2 汇总TABLE ID *</label>
-                <input type="text" id="answer_table_id" name="answer_table_id" required>
-            </div>
-            <div class="form-group">
-                <label>总汇总TABLE ID *</label>
-                <input type="text" id="answer_table_id" name="answer_table_id" required>
-            </div>
-
-            <div class="form-group">
-                <label>PRIVATE TOKEN *</label>
-                <input type="text" id="person_token" name="person_token" required>
-            </div>
-
-            <div class="form-group">
-                <label>PRIVATE APP TOKEN *</label>
-                <input type="text" id="app_token" name="app_token" required>
-            </div>
-            <div class="form-group">
-                <label>PRIVATE 来源 TABLE *</label>
-                <input type="text" id="app_token" name="app_token" required>
-            </div>
-           
-        </form>
-
-        <!-- 按钮组 -->
-        <div class="button-group">
-            <button type="button" class="btn-secondary" id="resetBtn">重置</button>
-            <button type="button" class="btn-primary" id="submitBtn">提交数据</button>
-        </div>
-
-
-    </div>
 
     <script type="module">
         import DBStorage from './assets/dbStorage.js';
         const dbStorage = new DBStorage('feishu', 'config');
         var config = {};
         var moduelName = 'aggregate';
-        dbStorage.getItem(`${moduelName}_person_token`).then(value => {
-            if (value) {
-                document.getElementById("person_token").value = value;
-            }
-        });
-        dbStorage.getItem(`${moduelName}_app_token`).then(value => {
-            if (value) {
-                document.getElementById("app_token").value = value;
-            }
+        var keys = [
+            'app_token',
+            'person_token',
+            'exam_table_id',
+            'meeting_table_id',
+            // 'exam_detail_table_id',
+            // 'exam_detail_view_id',
+            'private_app_token',
+            'private_person_token',
+            // 'meeting_detail_table_id',
+            // 'meeting_detail_start',
+            // 'meeting_detail_end',
+            // 'exam_detail_session',
+        ];
+        keys.forEach(key => {
+            dbStorage.getItem(`${moduelName}_${key}`).then(value => {
+                if (value) {
+                    document.getElementById(key).value = value;
+                }
+            });
         });
 
-        
+
         // 切换折叠组
         function toggleSection(header) {
             const section = header.parentElement;
@@ -603,45 +502,28 @@
                 section.classList.remove('active');
             });
         }
-                // 页面加载时默认展开第一个分组
-        document.addEventListener('DOMContentLoaded', function() {
+        // 页面加载时默认展开第一个分组
+        document.addEventListener('DOMContentLoaded', function () {
             const firstSection = document.querySelector('.form-group-section');
             if (firstSection) {
                 firstSection.classList.add('active');
             }
         });
-        console.log( document.querySelectorAll('.section-header'))
+
         document.querySelectorAll('.section-header').forEach(header => {
-            header.addEventListener('click', function() {
+            header.addEventListener('click', function () {
                 toggleSection(this);
             });
         });
         let excelData = null;
         let formObject = {};
         let uploadedFileName = '';
+        const isEmpty = (obj) => 
+        Object.prototype.toString.call(obj) === '[object Object]' 
+        && Reflect.ownKeys(obj).length === 0;
 
-        async function getRecords(app_token,tableId,person_token) {
+        async function getRecords(data, app_token, tableId, person_token) {
             const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${tableId}/records/search`;
-            let data = {
-                    "automatic_fields": False,
-                    "field_names": [
-                        "应付利息",
-                        "应还总额"
-                    ],
-                    "filter": {
-                        "conditions": [
-                            {
-                                "field_name": "分类",
-                                "operator": "is",
-                                "value": [
-                                    "交通费"
-                                ]
-                            }
-                        ],
-                        "conjunction": "and"
-                    },
-                    "view_id": view_id
-                }
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -649,7 +531,7 @@
                         "Content-Type": "application/json; charset=utf-8",
                         "Authorization": `Bearer ${person_token}`
                     },
-                    body: JSON.stringify(field) // 需要手动将对象转为JSON字符串
+                    body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
                 });
 
                 // 解析JSON响应
@@ -680,39 +562,17 @@
             }
         }
 
-        async function createRecords(app_token,tableId,person_token,formObject, execelData) {
-            var records = [
-                // {
-                //     "fields": {
-                //         "人员": [{ "id": "451gbbad" }]
-                //     }
-                // }
-            ];
-            execelData.forEach((row, index) => {
-                if (index === 0) return; // 跳过标题行
-                if (row.length === 0) return; // 跳过空行
-                var record = {
-                    "fields": {
-                        "人员": [{ "id": row[0] }]
-                    }
-                };
-                records.push(record);
-            });
-
-            // 请求数据
-            const data = {
-                "records": records
-            };
+        async function createRecords(data, app_token, table_id, person_token) {
 
             // 请求配置
-            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=user_id`;
-
+            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=open_id`;
+            console.log(table_id)
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         "Content-Type": "application/json; charset=utf-8",
-                        "Authorization": `Bearer ${formObject.person_token}`
+                        "Authorization": `Bearer ${person_token}`
                     },
                     body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
                 });
@@ -721,7 +581,7 @@
                 const result = await response.json();
                 // 检查HTTP响应状态
                 if (!response.ok) {
-                    console.log(response.json())
+                    console.log(result)
                     showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
                     return null;
                 }
@@ -741,19 +601,132 @@
             }
         }
 
+        async function getExamDetailRecords() {
+            let data = {
+                "automatic_fields": false,
+                "field_names": [
+                    "考试人",
+                    "总分",
+                    "是否及格",
+                ],
+                // "filter": {
+                //     "conditions": [
+                //         {
+                //             "field_name": "分类",
+                //             "operator": "is",
+                //             "value": [
+                //                 "交通费"
+                //             ]
+                //         }
+                //     ],
+                //     "conjunction": "and"
+                // },
+                "view_id": formObject.exam_detail_view_id
+            }
+            return await getRecords(data, formObject.app_token, formObject.exam_detail_table_id, formObject.person_token);
+        }
+        async function copyToExamTotal() {
+            let res = await getExamDetailRecords();
+            console.log(res);
+            // var records = [
+            // {
+            //     "fields": {
+            //         "人员": [{ "id": "451gbbad" }]
+            //     }
+            // }
+            // ];
+            var records = [];
+            res.forEach((row, index) => {
+                if(isEmpty(row.fields)) return; // 跳过空行
+                var record = {
+                    "fields": {
+                        "考试人": [{ "id": row.fields['考试人'][0].id }],
+                        "总分": row.fields['总分'].value[0],
+                        "是否及格": row.fields['是否及格'].value[0].text,
+                        "场次": formObject.exam_detail_session,
+                    }
+                };
+                records.push(record);
+            });
+
+            // 请求数据
+            const data = {
+                "records": records
+            };
+            return await createRecords(data, formObject.app_token, formObject.exam_table_id, formObject.person_token);
+        }
+        async function getUserDetailRecords() {
+            let data = {
+                "automatic_fields": false,
+                "field_names": [
+                    "参会人",
+                    "首次入会时间",
+                    "最后离会时间",
+                ],
+                // "filter": {
+                //     "conditions": [
+                //         {
+                //             "field_name": "分类",
+                //             "operator": "is",
+                //             "value": [
+                //                 "交通费"
+                //             ]
+                //         }
+                //     ],
+                //     "conjunction": "and"
+                // },
+                "view_id": formObject.meeting_detail_view_id
+            }
+            return await getRecords(data, formObject.private_app_token, formObject.meeting_detail_table_id, formObject.private_person_token);
+        }
+
+        async function copyToUserTotal() {
+            let res = await getUserDetailRecords();
+            console.log(res);
+            // var records = [
+            // {
+            //     "fields": {
+            //         "人员": [{ "id": "451gbbad" }]
+            //     }
+            // }
+            // ];
+            var records = [];
+
+            var start = new Date(formObject.meeting_detail_start).getTime();
+            var end = new Date(formObject.meeting_detail_end).getTime();
+            var diffMs = end - start; // 35分20秒 = 35×60000 + 20×1000 = 2120000 毫秒
+            var diffMsReal = Math.round(diffMs / 60000);
+
+            res.forEach((row, index) => {
+                if(isEmpty(row.fields)) return; // 跳过空行
+                var record = {
+                    "fields": {
+                        "人员": [{ "id": row.fields['参会人'][0].id }],
+                        "参会时间": row.fields['首次入会时间'] < start ? start : row.fields['首次入会时间' ],
+                        "最后离会时间": row.fields['最后离会时间'] > end ? end : row.fields['最后离会时间'],
+                        "会议时长": diffMsReal
+                    }
+                };
+                records.push(record);
+            });
+
+            // 请求数据
+            const data = {
+                "records": records
+            };
+            return await createRecords(data,formObject.app_token,formObject.meeting_table_id,formObject.person_token);
+        }
+
         document.getElementById('submitBtn').addEventListener('click', submitData);
         // 提交数据
-        async function submitData() {
+        async function submitData(e) {
+            e.preventDefault();
             const form = document.getElementById('mainForm');
 
             // 验证表单
             if (!form.checkValidity()) {
                 showAlert('请填写必填项！', 'error');
                 form.reportValidity();
-                return;
-            }
-            if(excelData ==null){
-                showAlert('请上传Excel文件！', 'error');
                 return;
             }
             // 显示loading
@@ -766,17 +739,11 @@
                 formObject[key] = value;
                 dbStorage.setItem(`${moduelName}_${key}`, value);
             });
-            var { records, columns  } = handleData();
-            // var answerFieldIds = await createAnswers(records, formObject);
-            var questionTableInfo = await createQuestionTable(formObject.question_name);
-            console.log("创建题目表结果：", questionTableInfo);
-            formObject.questionTableId = questionTableInfo.table_id;
-            var scoreFields = await upsetQuestionField(columns);
-            console.log("创建题目字段结果：", scoreFields);
-            var sumFieldId = await upsetSumField(questionTableInfo.field_id_list[2],scoreFields);
-            console.log("更新总分字段结果：", sumFieldId);
-            var passFieldId = await upsetPassField(questionTableInfo.field_id_list[3],sumFieldId);
-            console.log("更新及格字段结果：", passFieldId);
+
+            // await copyToExamTotal();
+            console.log("考试成绩汇总完成！");
+            await copyToUserTotal();
+            console.log("人员参会汇总完成！");
             document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
 
         }
@@ -795,6 +762,7 @@
 
         // 显示提示信息
         function showAlert(message, type) {
+            console.log('showAlert', message, type);
             const alert = document.getElementById('alert');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
@@ -802,10 +770,10 @@
 
             setTimeout(() => {
                 alert.style.display = 'none';
-            }, 15000);
-            if (type === 'error'){
-                throw new Error(message);
-            }
+            }, 25000);
+            // if (type === 'error'){
+            //     throw new Error(message);
+            // }
 
         }
 
