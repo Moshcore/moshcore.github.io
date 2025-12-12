@@ -371,7 +371,7 @@
                             placeholder="请输入考试详情视图ID" required>
                     </div>
                 </div>
-                <div class="section-content">
+                <!-- <div class="section-content">
                     <div class="form-group">
                         <label class="form-label">
                             场次<span class="required">*</span>
@@ -379,7 +379,7 @@
                         <input type="text" id="exam_detail_session" name="exam_detail_session" class="form-input"
                             placeholder="请输入考试场次" required>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- 工作信息 -->
@@ -445,7 +445,8 @@
 
             <!-- 提交按钮 -->
             <div class="form-actions">
-                <button type="submit" id="submitBtn" class="btn btn-primary">✓ 提交表单</button>
+                <button type="submit" id="examSubmitBtn" class="btn btn-primary">✓ 汇总考试</button>
+                <button type="submit" id="meetingSubmitBtn" class="btn btn-primary">✓ 汇总参会</button>
                 <button type="reset" id="resetBtn" class="btn btn-secondary">↻ 重置</button>
             </div>
             <div id="alert" class="alert"></div>
@@ -688,7 +689,7 @@
                         "考试人": [{ "id": row.fields['考试人'][0].id }],
                         "总分": row.fields['总分'].value[0],
                         "是否及格": row.fields['是否及格'].value[0].text,
-                        "场次": formObject.exam_detail_session,
+                        // "场次": formObject.exam_detail_session,
                     }
                 };
                 records.push(record);
@@ -758,7 +759,8 @@
             
         }
 
-        document.getElementById('submitBtn').addEventListener('click', submitData);
+        document.getElementById('examSubmitBtn').addEventListener('click', submitData);
+        document.getElementById('meetingSubmitBtn').addEventListener('click', submitData);
         // 提交数据
         async function submitData(e) {
             e.preventDefault();
@@ -780,11 +782,14 @@
                 formObject[key] = value;
                 dbStorage.setItem(`${moduelName}_${key}`, value);
             });
-
-            await copyToExamTotal();
-            console.log("考试成绩汇总完成！");
-            await copyToUserTotal();
-            console.log("人员参会汇总完成！");
+            if(e.target.id==='examSubmitBtn'){
+                await copyToExamTotal();
+                console.log("考试成绩汇总完成！");
+            }
+            if(e.target.id==='meetingSubmitBtn'){
+                await copyToUserTotal();
+                console.log("人员参会汇总完成！");
+            }
             document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
             showAlert('数据汇总成功！', 'success');
         }
