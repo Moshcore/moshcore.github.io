@@ -529,7 +529,7 @@
             console.log('Fetching records from:', url);
             let allItems = [];
             let pageToken = undefined; // 初始无 page_token
-
+            let hasMore = true;
             try {
                 do {
                     // 构造本次请求的 body
@@ -569,11 +569,11 @@
 
                     // 更新 page_token 和 has_more
                     pageToken = pageData.page_token;
-                    const hasMore = pageData.has_more;
+                    hasMore = pageData.has_more;
 
                     console.log(`已获取 ${allItems.length} 条记录, has_more: ${hasMore}`);
                     await new Promise(resolve => setTimeout(resolve, 100));
-                } while (pageToken); // 当有 page_token 时继续（飞书文档：has_more 为 true 时才有 page_token）
+                } while (hasMore); // 当有 page_token 时继续（飞书文档：has_more 为 true 时才有 page_token）
 
                 showAlert(`成功获取全部 ${allItems.length} 条记录`, 'success');
                 return allItems;
