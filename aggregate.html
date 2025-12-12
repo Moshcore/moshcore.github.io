@@ -529,7 +529,7 @@
             console.log('Fetching records from:', url);
             let allItems = [];
             let pageToken = undefined; // 初始无 page_token
-            let hasMore = true;
+            let hasMore = false;
             try {
                 do {
                     // 构造本次请求的 body
