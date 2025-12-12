@@ -605,7 +605,7 @@
                     const batch = records.slice(i, i + BATCH_SIZE);
                     const data = { records: batch };
 
-                    const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=user_id`;
+                    const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=open_id`;
 
                     const response = await fetch(url, {
                         method: 'POST',
