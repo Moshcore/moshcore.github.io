@@ -456,6 +456,7 @@
     <script type="module">
         import DBStorage from './assets/dbStorage.js';
         const dbStorage = new DBStorage('feishu', 'config');
+        const BATCH_SIZE = 400;
         var config = {};
         var moduelName = 'aggregate';
         var keys = [
@@ -518,85 +519,129 @@
         let excelData = null;
         let formObject = {};
         let uploadedFileName = '';
-        const isEmpty = (obj) => 
-        Object.prototype.toString.call(obj) === '[object Object]' 
-        && Reflect.ownKeys(obj).length === 0;
+        const isEmpty = (obj) =>
+            Object.prototype.toString.call(obj) === '[object Object]'
+            && Reflect.ownKeys(obj).length === 0;
 
         async function getRecords(data, app_token, tableId, person_token) {
             const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${tableId}/records/search`;
+
+            let allItems = [];
+            let pageToken = undefined; // 初始无 page_token
+
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Authorization": `Bearer ${person_token}`
-                    },
-                    body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
-                });
+                do {
+                    // 构造本次请求的 body
+                    const requestData = { ...data }; // 避免修改原始 data
 
-                // 解析JSON响应
-                const result = await response.json();
-                console.log(result)
-                // 检查HTTP响应状态
-                if (!response.ok) {
-                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
-                    return null;
-                }
+                    // 设置合理的 page_size（最大 500，飞书限制）
+                    requestData.page_size = BATCH_SIZE;
 
+                    if (pageToken) {
+                        requestData.page_token = pageToken;
+                    }
 
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": `Bearer ${person_token}`
+                        },
+                        body: JSON.stringify(requestData)
+                    });
 
-                // 检查飞书API返回的code
-                if (result.code === 0) {
-                    showAlert('数据提交成功！', 'success');
-                    return result.data.items;
-                } else {
-                    document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                    showAlert(`addFieldApi API错误: ${result.msg} (错误码: ${result.code})`, 'error');
-                    return null;
-                }
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    // 检查飞书 API 返回码
+                    if (result.code !== 0) {
+                        throw new Error(`飞书 API 错误: ${result.msg} (code: ${result.code})`);
+                    }
+
+                    const pageData = result.data;
+                    if (pageData && Array.isArray(pageData.items)) {
+                        allItems = allItems.concat(pageData.items);
+                    }
+
+                    // 更新 page_token 和 has_more
+                    pageToken = pageData.page_token;
+                    const hasMore = pageData.has_more;
+
+                    console.log(`已获取 ${allItems.length} 条记录, has_more: ${hasMore}`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } while (pageToken); // 当有 page_token 时继续（飞书文档：has_more 为 true 时才有 page_token）
+
+                showAlert(`成功获取全部 ${allItems.length} 条记录`, 'success');
+                return allItems;
+
             } catch (error) {
-                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                showAlert(`请求发生错误 ${error}`, 'error');
+                console.error('获取记录失败:', error);
+                document.getElementById('loadingMask').style.display = 'none';
+                showAlert(`获取数据失败: ${error.message}`, 'error');
                 return null;
             }
         }
 
-        async function createRecords(data, app_token, table_id, person_token) {
+        async function createRecords(records, app_token, table_id, person_token) {
 
-            // 请求配置
-            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=open_id`;
-            console.log(table_id)
+            // 显示 loading（建议在外层显示，但如果你坚持在这里控制）
+            // document.getElementById('loadingMask').style.display = 'block';
+
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Authorization": `Bearer ${person_token}`
-                    },
-                    body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
-                });
-                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                // 解析JSON响应
-                const result = await response.json();
-                // 检查HTTP响应状态
-                if (!response.ok) {
-                    console.log(result)
-                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
+                // 如果 records 不是数组或为空，直接返回
+                if (!Array.isArray(records) || records.length === 0) {
+                    showAlert('无数据需要提交', 'warning');
                     return null;
                 }
 
-                // 检查飞书API返回的code
-                if (result.code === 0) {
-                    showAlert('数据提交成功！', 'success');
-                    return result;
-                } else {
-                    showAlert(`API错误: ${result.msg} (错误码: ${result.code})`, 'error');
-                    return null;
+                const total = records.length;
+                let successCount = 0;
+
+                // 分批发送
+                for (let i = 0; i < total; i += BATCH_SIZE) {
+                    const batch = records.slice(i, i + BATCH_SIZE);
+                    const data = { records: batch };
+
+                    const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create?user_id_type=user_id`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": `Bearer ${person_token}`
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    // 检查 HTTP 状态
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    // 检查飞书 API 返回码
+                    if (result.code !== 0) {
+                        throw new Error(`${result.msg} (code: ${result.code})`);
+                    }
+
+                    successCount += batch.length;
+                    console.log(`✅ 已成功提交 ${successCount} / ${total} 条记录`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
+
+                // 全部成功
+                document.getElementById('loadingMask').style.display = 'none';
+                showAlert(`数据提交成功！共 ${successCount} 条`, 'success');
+                return { success: true, count: successCount };
+
             } catch (error) {
-                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                showAlert(`请求发生错误 ${error}`, 'error');
+                document.getElementById('loadingMask').style.display = 'none';
+                console.error('批量创建记录失败:', error);
+                showAlert(`提交失败: ${error.message}`, 'error');
                 return null;
             }
         }
@@ -637,7 +682,7 @@
             // ];
             var records = [];
             res.forEach((row, index) => {
-                if(isEmpty(row.fields)) return; // 跳过空行
+                if (isEmpty(row.fields)) return; // 跳过空行
                 var record = {
                     "fields": {
                         "考试人": [{ "id": row.fields['考试人'][0].id }],
@@ -649,11 +694,10 @@
                 records.push(record);
             });
 
-            // 请求数据
-            const data = {
-                "records": records
-            };
-            return await createRecords(data, formObject.app_token, formObject.exam_table_id, formObject.person_token);
+
+
+            await createRecords(records, formObject.app_token, formObject.exam_table_id, formObject.person_token);
+
         }
         async function getUserDetailRecords() {
             let data = {
@@ -698,11 +742,11 @@
             var diffMsReal = Math.round(diffMs / 60000);
 
             res.forEach((row, index) => {
-                if(isEmpty(row.fields)) return; // 跳过空行
+                if (isEmpty(row.fields)) return; // 跳过空行
                 var record = {
                     "fields": {
                         "人员": [{ "id": row.fields['参会人'][0].id }],
-                        "参会时间": row.fields['首次入会时间'] < start ? start : row.fields['首次入会时间' ],
+                        "参会时间": row.fields['首次入会时间'] < start ? start : row.fields['首次入会时间'],
                         "最后离会时间": row.fields['最后离会时间'] > end ? end : row.fields['最后离会时间'],
                         "会议时长": diffMsReal
                     }
@@ -710,11 +754,8 @@
                 records.push(record);
             });
 
-            // 请求数据
-            const data = {
-                "records": records
-            };
-            return await createRecords(data,formObject.app_token,formObject.meeting_table_id,formObject.person_token);
+            await createRecords(records,formObject.app_token,formObject.meeting_table_id,formObject.person_token);
+            
         }
 
         document.getElementById('submitBtn').addEventListener('click', submitData);
@@ -740,12 +781,12 @@
                 dbStorage.setItem(`${moduelName}_${key}`, value);
             });
 
-            // await copyToExamTotal();
+            await copyToExamTotal();
             console.log("考试成绩汇总完成！");
             await copyToUserTotal();
             console.log("人员参会汇总完成！");
             document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-
+            showAlert('数据汇总成功！', 'success');
         }
 
         document.getElementById('resetBtn').addEventListener('click', resetAll);

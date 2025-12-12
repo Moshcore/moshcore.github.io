@@ -267,6 +267,7 @@
     <script type="module">
         import DBStorage from './assets/dbStorage.js';
         const dbStorage = new DBStorage('feishu', 'config');
+        const BATCH_SIZE = 400;
         var config = {};
         var moduelName = 'user_import';
         dbStorage.getItem(`${moduelName}_person_token`).then(value => {
@@ -406,47 +407,63 @@
                 records.push(record);
             });
 
-            // 请求数据
-            const data = {
-                "records": records
-            };
+            await sendApi(records,formObject);
 
-            // 请求配置
-            const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables/${formObject.table_id}/records/batch_create?user_id_type=user_id`;
+        }
+
+        async function sendApi(records, formObject) {
+            // 隐藏 loading 在整个流程开始时执行一次（可选：移到外层更合理）
+            // document.getElementById('loadingMask').style.display = 'block';
 
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Authorization": `Bearer ${formObject.person_token}`
-                    },
-                    body: JSON.stringify(data) // 需要手动将对象转为JSON字符串
-                });
-                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                // 解析JSON响应
-                const result = await response.json();
-                // 检查HTTP响应状态
-                if (!response.ok) {
-                    console.log(result)
-                    showAlert(`API错误: ${response.msg} (错误码: ${response.code})`, 'error');
-                    return null;
+                const results = [];
+
+                for (let i = 0; i < records.length; i += BATCH_SIZE) {
+                    const batch = records.slice(i, i + BATCH_SIZE);
+                    const data = { records: batch };
+
+                    const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${formObject.app_token}/tables/${formObject.table_id}/records/batch_create?user_id_type=user_id`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": `Bearer ${formObject.person_token}`
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    // 检查 HTTP 状态
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    // 检查飞书 API 返回码
+                    if (result.code !== 0) {
+                        throw new Error(`飞书API错误: ${result.msg} (code: ${result.code})`);
+                    }
+
+                    results.push(result);
+
+                    // 可选：加微小延迟避免触发限流（如飞书限制 10 QPS）
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
-                // 检查飞书API返回的code
-                if (result.code === 0) {
-                    showAlert('数据提交成功！', 'success');
-                    return result;
-                } else {
-                    showAlert(`API错误: ${result.msg} (错误码: ${result.code})`, 'error');
-                    return null;
-                }
+                // 全部成功
+                document.getElementById('loadingMask').style.display = 'none';
+                showAlert('所有数据提交成功！', 'success');
+                return results; // 返回每批的结果数组
+
             } catch (error) {
-                document.getElementById('loadingMask').style.display = 'none'; // 隐藏loading
-                showAlert(`请求发生错误 ${error}`, 'error');
+                document.getElementById('loadingMask').style.display = 'none';
+                console.error('批量提交失败:', error);
+                showAlert(`提交失败: ${error.message}`, 'error');
                 return null;
             }
         }
+
         document.getElementById('resetBtn').addEventListener('click', resetAll);
         // 重置所有
         function resetAll() {
