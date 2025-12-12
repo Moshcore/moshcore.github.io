@@ -525,7 +525,7 @@
 
         async function getRecords(data, app_token, tableId, person_token) {
             const url = `https://base-api.feishu.cn/open-apis/bitable/v1/apps/${app_token}/tables/${tableId}/records/search`;
-
+            console.log('Fetching records from:', url);
             let allItems = [];
             let pageToken = undefined; // 初始无 page_token
 
@@ -540,7 +540,7 @@
                     if (pageToken) {
                         requestData.page_token = pageToken;
                     }
-
+                    console.log(requestData)
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: {
